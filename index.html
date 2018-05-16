@@ -1,0 +1,80 @@
+<meta charset="utf-8"> 
+
+<div id="dom"></div>
+
+<script>
+special_chars='\\<>:|=!'
+console.log(unescapeText(escapeText(special_chars))==special_chars, 'test escape/unescape')
+
+function escapeText(text){
+    return text
+        .replace(/[\\]/g, '\\\\')
+        .replace(/[<]/g, '\\<')
+        .replace(/[>]/g, '\\>')
+        .replace(/[:]/g, '\\:')
+        .replace(/[\|]/g, '\\|')
+        .replace(/[=]/g, '\\=')
+        .replace(/[!]/g, '\\!')
+}
+
+function unescapeText(text){
+    return text
+        .replace(/[\\][\\]/g, '\\')
+        .replace(/[\\][<]/g, '<')
+        .replace(/[\\][>]/g, '>')
+        .replace(/[\\][:]/g, ':')
+        .replace(/[\\][\|]/g, '|')
+        .replace(/[\\][=]/g, '=')
+        .replace(/[\\][!]/g, '!')
+}
+
+function decode(line){
+
+}
+
+function encode(html){
+    var dom=document.querySelector('#dom')
+    dom.innerHTML=html
+    return processNode(dom.childNodes)
+}
+
+function processNode(nodes){
+    var produced=''
+    for(processedNode of nodes){
+        switch(processedNode.nodeType){
+            case processedNode.TEXT_NODE:
+                produced+=escapeText(processedNode.textContent)
+                break
+            case processedNode.ELEMENT_NODE:
+                var attribute_section=''
+                for(attribute of processedNode.attributes){
+                    if(attribute.nodeValue!=''){
+                        attribute_section+='|'+attribute.nodeName+'='+escapeText(attribute.nodeValue)
+                    }
+                    else{
+                        attribute_section+='!'+attribute.nodeName
+                    }
+                }
+                produced+='<'
+                produced+=processedNode.tagName.toLowerCase()
+                produced+=attribute_section
+                var subnode_section=processNode(processedNode.childNodes)
+                produced+=subnode_section!=''?':'+subnode_section:''
+                produced+='>'
+                break
+        }
+    }
+    return produced
+}
+
+html='<div class="wrapper">nesting:<a class="button" href="https://www.w3.org/">W3C</a> empty attribute:<button disabled>this button is disabled</button></div>'
+reduced='<div|class=wrapper:nesting\\:<a|class=button|href=https\\://www.w3.org/:W3C> empty attribute\\:<button!disabled:this button is disabled>>'
+
+encoded=encode(html)
+console.log(encoded==reduced, encoded.length-html.length, encoded)
+// true -19 <div|class=wrapper:nesting\:<a|class=button|href=https\://www.w3.org/:W3C> empty attribute\:<button!disabled:this button is disabled>>
+
+//decoded=decode(reduced)
+//console.log(decoded==html, decoded)
+
+</script>
